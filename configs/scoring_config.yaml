@@ -1,0 +1,60 @@
+# UBI Scoring Configuration
+
+# Bias dimensions
+dimensions:
+  - toxicity
+  - sentiment
+  - stereotype_association
+  
+# Detector settings
+detectors:
+  perspective:
+    enabled: true
+    attributes:
+      - TOXICITY
+      - SEVERE_TOXICITY
+      - IDENTITY_ATTACK
+      - INSULT
+      - THREAT
+    threshold: 0.5
+    
+  textblob:
+    enabled: true
+    polarity_range: [-1, 1]  # negative to positive
+
+# UBI Parameters (from paper)
+ubi:
+  # Aggregation weights (must sum to 1)
+  alpha: 0.5  # Bias Magnitude weight
+  beta: 0.3   # Disparity weight
+  gamma: 0.2  # Distribution Shift weight
+  
+  # Per-dimension weights
+  dimension_weights:
+    toxicity: 0.4
+    sentiment: 0.3
+    stereotype: 0.3
+  
+  # Diversity penalty threshold
+  diversity_penalty_threshold: 0.1
+  
+  # Sentiment bias scaling
+  lambda: 0.2
+  
+  # Selection Rate threshold
+  sr_threshold: 0.5  # for binary classification
+  
+  # KL divergence bins
+  kl_bins: 20
+  kl_smoothing: 1e-6
+  
+  # Normalization percentiles
+  norm_percentile_min: 1
+  norm_percentile_max: 99
+
+# Bootstrap settings
+bootstrap:
+  enabled: true
+  n_iterations: 1000
+  confidence_level: 0.95
+  random_seed: 42

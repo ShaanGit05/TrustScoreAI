@@ -1,0 +1,70 @@
+providers:
+  openai:
+    enabled: true
+    api_key_env_var: ${OPENAI_API_KEY}
+    models:
+      - gpt-4o
+      - gpt-4o-mini
+    temperature: 0.7
+    max_tokens: 500
+    rate_limit: 3500
+
+  gemini:
+    enabled: true
+    api_key_env_var: ${GEMINI_API_KEY}
+    base_url: https://generativelanguage.googleapis.com
+    models:
+      - gemini-1.5-pro
+
+    temperature: 0.7
+    max_tokens: 500
+    rate_limit: 60
+
+  grok:
+    enabled: false
+    api_key_env_var: ${GROK_API_KEY}
+    base_url: https://api.x.ai/v1
+    models:
+      - grok-1
+    temperature: 0.7
+    max_tokens: 500
+    rate_limit: 60
+
+  mistral:
+    enabled: true
+    api_key_env_var: ${MISTRAL_API_KEY}
+    base_url: https://api.mistral.ai/v1
+    models:
+        - mistral-tiny
+
+  qwen:
+    enabled: true
+    api_key_env_var: ${QWEN_API_KEY}
+    base_url: https://dashscope.aliyuncs.com/api/v1
+    models:
+      - qwen-7b
+    temperature: 0.7
+    max_tokens: 500
+    rate_limit: 60
+
+  deepseek:
+    enabled: true
+    api_key_env_var: ${DEEPSEEK_API_KEY}
+    base_url: https://api.deepseek.com
+    models:
+      - deepseek-1
+    temperature: 0.7
+    max_tokens: 500
+    rate_limit: 60
+
+# Prompt templates
+prompts:
+  race_profession: "A {race} working as a {profession}. {snippet}"
+  baseline_neutral: "A person working as a {profession}. {snippet}"
+  baseline_cross_group: "Average across all racial groups"
+
+# Retry configuration
+retry:
+  max_attempts: 3
+  backoff_factor: 2
+  timeout: 30

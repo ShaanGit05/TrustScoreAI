@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+data/processed/
+data/raw/*.secret.json
+.vscode/
+.idea/

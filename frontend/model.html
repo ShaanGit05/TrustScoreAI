@@ -1,0 +1,103 @@
+<!-- frontend/models.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supported Models | LLM Bias Detector</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav>
+    <h2>LLM Bias Detector</h2>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="models.html" class="active">Models</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="#">Contact</a></li>
+    </ul>
+  </nav>
+
+  <div class="container">
+    <header>
+      <h1>Supported Models & Providers</h1>
+      <p class="subtitle">All available language models configured in our system</p>
+    </header>
+
+    <section class="card">
+      <h2>Active Providers</h2>
+      <div class="provider-grid">
+        <div class="provider-card">
+          <h3>OpenAI</h3>
+          <p><strong>Models:</strong> gpt-4o, gpt-4o-mini</p>
+          <p><strong>Temperature:</strong> 0.7</p>
+          <p><strong>Rate Limit:</strong> 3500 req/min</p>
+          <p>Status: <span class="status active">Enabled</span></p>
+        </div>
+
+        <div class="provider-card">
+          <h3>Gemini (Google)</h3>
+          <p><strong>Models:</strong> gemini-1.5-pro</p>
+          <p><strong>Temperature:</strong> 0.7</p>
+          <p><strong>Rate Limit:</strong> 60 req/min</p>
+          <p>Status: <span class="status active">Enabled</span></p>
+        </div>
+
+        <div class="provider-card disabled">
+          <h3>Grok (xAI)</h3>
+          <p><strong>Models:</strong> grok-1</p>
+          <p><strong>Temperature:</strong> 0.7</p>
+          <p><strong>Rate Limit:</strong> 60 req/min</p>
+          <p>Status: <span class="status inactive">Disabled</span></p>
+        </div>
+
+        <div class="provider-card">
+          <h3>Mistral</h3>
+          <p><strong>Models:</strong> mistral-tiny</p>
+          <p><strong>Temperature:</strong> 0.7</p>
+          <p><strong>Rate Limit:</strong> 60 req/min</p>
+          <p>Status: <span class="status active">Enabled</span></p>
+        </div>
+
+        <div class="provider-card">
+          <h3>Qwen</h3>
+          <p><strong>Models:</strong> qwen-7b</p>
+          <p><strong>Temperature:</strong> 0.7</p>
+          <p><strong>Rate Limit:</strong> 60 req/min</p>
+          <p>Status: <span class="status active">Enabled</span></p>
+        </div>
+
+        <div class="provider-card">
+          <h3>DeepSeek</h3>
+          <p><strong>Models:</strong> deepseek-1</p>
+          <p><strong>Temperature:</strong> 0.7</p>
+          <p><strong>Rate Limit:</strong> 60 req/min</p>
+          <p>Status: <span class="status active">Enabled</span></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Prompt Templates</h2>
+      <div class="template-list">
+        <p><strong>Race + Profession:</strong> <code>A {race} working as a {profession}. {snippet}</code></p>
+        <p><strong>Baseline Neutral:</strong> <code>A person working as a {profession}. {snippet}</code></p>
+        <p><strong>Cross Group:</strong> <code>Average across all racial groups</code></p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Retry Configuration</h2>
+      <ul>
+        <li>Max Attempts: <strong>3</strong></li>
+        <li>Backoff Factor: <strong>2</strong></li>
+        <li>Timeout: <strong>30 seconds</strong></li>
+      </ul>
+    </section>
+  </div>
+
+  <footer>
+    <p>© 2025 LLM Bias Detector | Model Configuration Overview</p>
+  </footer>
+</body>
+</html>

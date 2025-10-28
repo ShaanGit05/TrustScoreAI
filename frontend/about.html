@@ -1,0 +1,234 @@
+<!-- frontend/about.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About | LLM Bias Detection</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav>
+        <h2>LLM Bias Detector</h2>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="#">Models</a></li>
+            <li><a href="about.html" class="active">About</a></li>
+            <li><a href="#">Contact</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1>About the Project</h1>
+            <p class="subtitle">Bias Detection and Benchmarking for Large Language Models</p>
+        </header>
+
+        <section class="card">
+            <h2>Our Mission</h2>
+            <p>
+                The LLM Bias Detector aims to evaluate and benchmark bias across various large language models (LLMs)
+                using our proposed <strong>Unified Bias Index (UBI)</strong>. This platform enables users to
+                assess how trustworthy, fair, and reliable AI-generated responses are across different sensitive dimensions.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>What is the Unified Bias Index?</h2>
+            <p>
+                The Unified Bias Index (UBI) is a quantitative measure derived from multiple statistical components like
+                <strong>Bias Magnitude (BM)</strong>, <strong>Directional Shift (DS)</strong>, and <strong>Distributional Parity (DP)</strong>.
+                Together, they produce a single interpretable metric that represents the overall bias of an LLM model.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>Developed By</h2>
+            <ul>
+                <li>Shaan Sakharkar</li>
+                <li>Numa and Team Members</li>
+                <li>Guided under Hackathon Project on Responsible AI</li>
+            </ul>
+        </section>
+    </div>
+
+    <footer>
+        <p>© 2025 LLM Bias Detector | Developed with ❤️ by Team</p>
+    </footer>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About | Unified Bias Detection Framework </title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav>
+        <h2>TrustScore AI</h2>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="#">Models</a></li>
+            <li><a href="about.html" class="active">About</a></li>
+            <li><a href="#">Contact</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1>About TrustScore AI</h1>
+            <p class="subtitle">Unified Bias Detection Framework for Large Language Models</p>
+        </header>
+
+        <section class="card">
+            <h2>Project Overview</h2>
+            <p>
+                TrustScore AI is a comprehensive framework designed to evaluate Large Language Models (LLMs) such as OpenAI, Gemini, Mistral, Qwen, and DeepSeek by quantifying their bias levels using a standardized metric called the Unified Bias Index (UBI).
+            </p>
+            <p>
+                Our platform enables users to select an LLM and analyze its responses to structured, domain-specific prompts covering sensitive dimensions including gender, religion, and profession. The system converts text outputs into numerical bias scores using sentiment analysis, toxicity detection, and linguistic evaluation metrics.
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>Unified Bias Index (UBI)</h2>
+            <p>
+                The Unified Bias Index (UBI) is a comprehensive quantitative measure derived from three distinct bias dimensions:
+            </p>
+            
+            <div class="metric-section">
+                <h3>Bias Magnitude (BM)</h3>
+                <p>Measures the intensity or strength of the bias:</p>
+                <div class="formula">
+                    BM = ∑<sub>i=1</sub><sup>n</sup> w<sub>i</sub> ⋅ B<sub>i</sub> + P(D) + λ ⋅ S
+                </div>
+            </div>
+            
+            <div class="metric-section">
+                <h3>Disparity (DP)</h3>
+                <p>Captures fairness gaps across demographic groups:</p>
+                <div class="formula">
+                    DP = norm(1/n ∑<sub>i=1</sub><sup>n</sup> (1 - min<sub>k</sub> SR<sub>k</sub>(i) / max<sub>k</sub> SR<sub>k</sub>(i) + δ))
+                </div>
+            </div>
+            
+            <div class="metric-section">
+                <h3>Distribution Shift (DS)</h3>
+                <p>Measures deviation of LLM output distribution from a neutral baseline:</p>
+                <div class="formula">
+                    DS = norm(1/n ∑<sub>i=1</sub><sup>n</sup> ∑<sub>b=1</sub><sup>B</sup> f<sub>G,b</sub>(i) log(f<sub>G,b</sub>(i) / f<sub>baseline,b</sub>(i)))
+                </div>
+            </div>
+            
+            <div class="metric-section">
+                <h3>Unified Bias Index</h3>
+                <p>These three metrics combine into the final UBI score:</p>
+                <div class="formula">
+                    UBI = α ⋅ BM + β ⋅ DP + γ ⋅ DS
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Technical Implementation</h2>
+            <div class="tech-flow">
+                <h3>Technical Flow</h3>
+                <ol>
+                    <li>Dataset (JSON) → Pre-processing → Baseline Calibration</li>
+                    <li>Prompt sent to multiple LLMs → Text Response</li>
+                    <li>Response converted to numerical metrics (toxicity, sentiment, etc.)</li>
+                    <li>Scores passed through BM, DP, DS computation modules</li>
+                    <li>Normalization → UBI calculation → Visualization Dashboard</li>
+                </ol>
+            </div>
+            
+            <div class="tech-stack">
+                <h3>Technology Stack</h3>
+                <div class="stack-categories">
+                    <div class="stack-category">
+                        <h4>Frontend</h4>
+                        <ul>
+                            <li>HTML, CSS, JavaScript</li>
+                            <li>Chart.js</li>
+                        </ul>
+                    </div>
+                    <div class="stack-category">
+                        <h4>Backend</h4>
+                        <ul>
+                            <li>Python (Flask)</li>
+                            <li>Libraries: pandas, numpy, scipy, sklearn, TextBlob, Detoxify</li>
+                        </ul>
+                    </div>
+                    <div class="stack-category">
+                        <h4>APIs & Storage</h4>
+                        <ul>
+                            <li>OpenAI, Gemini, Mistral, Qwen, DeepSeek</li>
+                            <li>JSON / CSV</li>
+                        </ul>
+                    </div>
+                    <div class="stack-category">
+                        <h4>Visualization</h4>
+                        <ul>
+                            <li>Matplotlib, Plotly</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Output & Applications</h2>
+            <p>
+                TrustScore AI generates a comprehensive Bias Score (UBI) for each evaluated model and displays comparative charts across LLMs. This enables researchers, developers, and organizations to:
+            </p>
+            <ul>
+                <li>Analyze how fair and unbiased each model is across sensitive dimensions</li>
+                <li>Make informed decisions about model selection for specific applications</li>
+                <li>Track bias mitigation efforts over time</li>
+                <li>Benchmark model performance against industry standards</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Future Scope</h2>
+            <p>
+                We plan to extend the TrustScore AI framework to evaluate additional dimensions of model performance:
+            </p>
+            <ul>
+                <li>Reliability and robustness assessments</li>
+                <li>Trustworthiness and ethical alignment metrics</li>
+                <li>Factual consistency evaluation</li>
+                <li>Automated mitigation and retraining recommendations</li>
+                <li>Expansion to multimodal AI systems</li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Development Team</h2>
+            <p>
+                This project is developed by a dedicated team of Computer Engineering students committed to advancing responsible AI practices through transparent evaluation frameworks.
+                <ul>
+                    <li>Shaan Sakharkar
+                    </li>
+                    <li>Hannan Shemle
+                    </li>
+                    <li>Numa Kazi
+                    </li>
+                    <li>Zaid Farooqui
+                    </li>
+                </ul>
+            </p>
+            <p>
+                Guided by principles of fairness, accountability, and transparency in AI systems.
+            </p>
+        </section>
+    </div>
+
+    <footer>
+        <p>© 2025 TrustScore AI | Unified Bias Detection Framework for LLMs</p>
+    </footer>
+</body>
+</html>

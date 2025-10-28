@@ -1,0 +1,27 @@
+# API Keys for LLM Providers
+# Copy this file to .env and fill in your actual API keys
+
+# OpenAI
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Google Gemini
+GOOGLE_API_KEY=your_google_api_key_here
+
+# Anthropic Claude
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# Mistral
+MISTRAL_API_KEY=your_mistral_api_key_here
+
+# Grok (xAI)
+GROK_API_KEY=your_grok_api_key_here
+
+# Qwen
+QWEN_API_KEY=your_qwen_api_key_here
+
+# DeepSeek
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
+
+# Optional: Logging level
+LOG_LEVEL=INFO
+

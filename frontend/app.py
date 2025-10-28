@@ -1,0 +1,129 @@
+# app.py
+from flask import Flask, render_template, request, jsonify
+try:
+    from flask_cors import CORS
+    CORS_AVAILABLE = True
+except ImportError:
+    CORS_AVAILABLE = False
+import os
+import sys
+import logging
+from datetime import datetime
+
+# Add src to path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+src_path = os.path.join(parent_dir, 'src')
+sys.path.insert(0, src_path)
+
+# Import with absolute path
+import pipeline
+BiasDetectionPipeline = pipeline.BiasDetectionPipeline
+
+app = Flask(__name__, static_folder='.', static_url_path='')
+app.config['JSON_SORT_KEYS'] = False
+if CORS_AVAILABLE:
+    CORS(app)  # Enable CORS for all routes
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("bias_detection.web")
+
+# Global pipeline instance
+pipeline = None
+
+def initialize_pipeline():
+    """Initialize the bias detection pipeline."""
+    global pipeline
+    try:
+        pipeline = BiasDetectionPipeline()
+        logger.info("Pipeline initialized successfully")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to initialize pipeline: {e}")
+        return False
+
+@app.route('/')
+def index():
+    """Render the main page."""
+    return app.send_static_file('index.html')
+
+@app.route('/api/models')
+def get_models():
+    """Get list of supported models."""
+    logger.info("Models API endpoint called")
+    
+    if not pipeline:
+        logger.error("Pipeline not initialized")
+        return jsonify({'error': 'Pipeline not initialized'}), 500
+    
+    try:
+        models = pipeline.get_supported_models()
+        logger.info(f"Retrieved {len(models)} models: {models}")
+        return jsonify({'models': models})
+    except Exception as e:
+        logger.error(f"Error getting models: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/analyze', methods=['POST'])
+def analyze_model():
+    """Analyze bias for a specific model."""
+    if not pipeline:
+        return jsonify({'error': 'Pipeline not initialized'}), 500
+    
+    try:
+        data = request.get_json()
+        model_name = data.get('model_name')
+        
+        if not model_name:
+            return jsonify({'error': 'Model name is required'}), 400
+        
+        logger.info(f"Received analysis request for model: {model_name}")
+        
+        # Validate model support
+        if not pipeline.validate_model_support(model_name):
+            return jsonify({'error': f'Model {model_name} is not supported'}), 400
+        
+        # Run bias analysis
+        results = pipeline.run_pipeline(model_name)
+        
+        # Prepare response
+        response = {
+            'model_name': model_name,
+            'ubi_score': results['ubi_score'],
+            'bias_level': results['bias_level'],
+            'components': results['components'],
+            'weights': results['weights'],
+            'metadata': {
+                'timestamp': results['metadata']['timestamp'],
+                'processing_time': results['metadata']['processing_time_seconds'],
+                'total_prompts': results['metadata']['total_prompts']
+            }
+        }
+        
+        logger.info(f"Analysis completed for {model_name}: UBI={results['ubi_score']:.4f}")
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"Analysis failed: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/status')
+def status():
+    """Get API status."""
+    pipeline_status = "initialized" if pipeline else "not initialized"
+    return jsonify({
+        'status': 'running',
+        'pipeline': pipeline_status,
+        'timestamp': datetime.now().isoformat()
+    })
+
+if __name__ == '__main__':
+    # Initialize pipeline
+    if initialize_pipeline():
+        app.run(debug=True, host='0.0.0.0', port=5000)
+    else:
+        logger.error("Failed to start application: Pipeline initialization failed")
