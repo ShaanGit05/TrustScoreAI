@@ -292,11 +292,11 @@ class BiasDetectionPipeline:
             
             # Step 6: Prepare category responses for distribution shift
             category_responses = {
-                category: [item['response_text'] for item in category_responses]
-                for category, category_responses in responses.items()
+                category: [item['response_text'] for item in cat_resp]
+                for category, cat_resp in responses.items()
             }
             
-            # Step 7: Compute comprehensive UBI
+            # Step 7: Compute GLOBAL UBI (existing behavior)
             results = self.aggregator.compute_comprehensive_ubi(
                 test_scores=test_scores,
                 baseline_scores=baseline_scores,
@@ -305,6 +305,33 @@ class BiasDetectionPipeline:
                 baseline_responses=baseline_responses,
                 stereotypes=self.scoring_config.get('stereotypes', [])
             )
+            
+            # Step 7b: Compute per-category UBI
+            by_category = {}
+            for category in datasets.keys():
+                cat_test = {category: test_scores.get(category, [])}
+                cat_baseline_scores = {category: baseline_scores.get(category, [0.0])}
+                cat_groups = {category: grouped_responses.get(category, {})}
+                cat_responses = {category: category_responses.get(category, [])}
+                cat_baseline_resp = {category: baseline_responses.get(category, [])}
+                cat_result = self.aggregator.compute_comprehensive_ubi_for_single_category(
+                    category=category,
+                    test_scores=cat_test,
+                    baseline_scores=cat_baseline_scores,
+                    group_responses=cat_groups,
+                    category_responses=cat_responses,
+                    baseline_responses=cat_baseline_resp,
+                    stereotypes=self.scoring_config.get('stereotypes', [])
+                )
+                if cat_result is not None:
+                    by_category[category] = cat_result
+                else:
+                    by_category[category] = {
+                        'ubi_score': None,
+                        'bias_level': 'Insufficient Data',
+                        'components': {'BM': None, 'DP': None, 'DS': None}
+                    }
+            results['by_category'] = by_category
             
             # Add metadata
             results['metadata'] = {

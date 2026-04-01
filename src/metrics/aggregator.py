@@ -187,6 +187,41 @@ class UBIAggregator:
             return "Low Bias"
         else:
             return "Minimal Bias"
+
+    def compute_comprehensive_ubi_for_single_category(self,
+                                                      category: str,
+                                                      test_scores: Dict[str, List[float]],
+                                                      baseline_scores: Dict[str, List[float]],
+                                                      group_responses: Dict[str, Dict[str, List[Any]]],
+                                                      category_responses: Dict[str, List[str]],
+                                                      baseline_responses: Dict[str, List[str]],
+                                                      stereotypes: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
+        """
+        Compute UBI for a single category. Returns None if insufficient data.
+        Works by passing single-category dicts to compute_comprehensive_ubi.
+        """
+        try:
+            result = self.compute_comprehensive_ubi(
+                test_scores=test_scores,
+                baseline_scores=baseline_scores,
+                group_responses=group_responses,
+                category_responses=category_responses,
+                baseline_responses=baseline_responses,
+                stereotypes=stereotypes
+            )
+            # Normalize component keys to BM, DP, DS for API consistency
+            return {
+                'ubi_score': result['ubi_score'],
+                'bias_level': result['bias_level'],
+                'components': {
+                    'BM': result['components']['bias_magnitude'],
+                    'DP': result['components']['disparity'],
+                    'DS': result['components']['distribution_shift']
+                }
+            }
+        except Exception as e:
+            logger.warning(f"Insufficient data for category {category}: {e}")
+            return None
     
     def compute_comprehensive_ubi(self,
                                 test_scores: Dict[str, List[float]],

@@ -26,11 +26,15 @@ class BiasDetectionApp {
             if (data.models && Array.isArray(data.models)) {
                 const select = document.getElementById('modelSelect');
                 select.innerHTML = '<option value="">Select a model...</option>';
-                
+                // Friendly display names for select options (value always = model id)
+                const displayNames = {
+                    'nvidia/nemotron-3-nano-30b-a3b:free': 'NVIDIA Nemotron 3 Nano (30B)',
+                    'deepseek/deepseek-r1-0528:free': 'DeepSeek R1 (Free)'
+                };
                 data.models.forEach(model => {
                     const option = document.createElement('option');
                     option.value = model;
-                    option.textContent = model;
+                    option.textContent = displayNames[model] || model;
                     select.appendChild(option);
                 });
                 
@@ -44,13 +48,15 @@ class BiasDetectionApp {
             console.error('Error loading models:', error);
             this.showError(`Failed to load supported models: ${error.message}`);
             
-            // Fallback: show some default models
+            // Fallback: show some default models when API fails
             const select = document.getElementById('modelSelect');
             select.innerHTML = `
                 <option value="">Select a model...</option>
                 <option value="gpt-4o">GPT-4o</option>
                 <option value="gpt-4o-mini">GPT-4o Mini</option>
                 <option value="gemini-pro">Gemini Pro</option>
+                <option value="nvidia/nemotron-3-nano-30b-a3b:free">NVIDIA Nemotron 3 Nano (30B)</option>
+                <option value="deepseek/deepseek-r1-0528:free">DeepSeek R1 (Free)</option>
             `;
         }
     }
@@ -113,6 +119,7 @@ class BiasDetectionApp {
         this.updateBiasLevel(results.bias_level, results.ubi_score);
         this.updateComponentChart(results.components, results.weights);
         this.updateDetailsTable(results);
+        this.updateCategoryWiseSection(results.by_category || {});
         this.showResults();
     }
 
@@ -206,6 +213,8 @@ class BiasDetectionApp {
 
     updateDetailsTable(results) {
         const table = document.getElementById('detailsTable');
+        const meta = results.metadata || {};
+        const comp = results.components || {};
         
         let html = `
             <table>
@@ -215,36 +224,109 @@ class BiasDetectionApp {
                 </tr>
                 <tr>
                     <td>Model</td>
-                    <td>${results.model_name}</td>
+                    <td>${results.model_name || '—'}</td>
                 </tr>
                 <tr>
                     <td>Bias Magnitude (BM)</td>
-                    <td>${results.components.bias_magnitude.toFixed(4)}</td>
+                    <td>${comp.bias_magnitude != null ? comp.bias_magnitude.toFixed(4) : '—'}</td>
                 </tr>
                 <tr>
                     <td>Disparity (DP)</td>
-                    <td>${results.components.disparity.toFixed(4)}</td>
+                    <td>${comp.disparity != null ? comp.disparity.toFixed(4) : '—'}</td>
                 </tr>
                 <tr>
                     <td>Distribution Shift (DS)</td>
-                    <td>${results.components.distribution_shift.toFixed(4)}</td>
+                    <td>${comp.distribution_shift != null ? comp.distribution_shift.toFixed(4) : '—'}</td>
                 </tr>
                 <tr>
                     <td>Total Prompts</td>
-                    <td>${results.metadata.total_prompts}</td>
+                    <td>${meta.total_prompts ?? '—'}</td>
                 </tr>
                 <tr>
                     <td>Processing Time</td>
-                    <td>${results.metadata.processing_time.toFixed(2)}s</td>
+                    <td>${meta.processing_time != null ? Number(meta.processing_time).toFixed(2) + 's' : '—'}</td>
                 </tr>
                 <tr>
                     <td>Analysis Time</td>
-                    <td>${new Date(results.metadata.timestamp).toLocaleString()}</td>
+                    <td>${meta.timestamp ? new Date(meta.timestamp).toLocaleString() : '—'}</td>
                 </tr>
             </table>
         `;
         
         table.innerHTML = html;
+    }
+
+    /**
+     * Render category-wise bias analysis. Handles missing/insufficient data safely.
+     */
+    updateCategoryWiseSection(byCategory) {
+        const section = document.getElementById('categoryWiseSection');
+        const container = document.getElementById('categoryWiseContainer');
+        if (!section || !container) return;
+
+        const categories = Object.keys(byCategory || {});
+        if (categories.length === 0) {
+            section.classList.add('hidden');
+            return;
+        }
+
+        const categoryLabels = {
+            gender: 'Gender',
+            race: 'Race',
+            profession: 'Profession',
+            religious_ideology: 'Religious Ideology',
+            political_ideology: 'Political Ideology'
+        };
+
+        const getBiasBadgeClass = (biasLevel) => {
+            if (!biasLevel || biasLevel === 'Insufficient Data') return 'bg-slate-600 text-slate-300';
+            if (biasLevel === 'High Bias') return 'bg-red-500/20 text-red-400 border border-red-500/40';
+            if (biasLevel === 'Medium Bias') return 'bg-amber-500/20 text-amber-400 border border-amber-500/40';
+            if (biasLevel === 'Low Bias') return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/40';
+            return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'; // Minimal Bias
+        };
+
+        let html = '';
+        categories.forEach((cat) => {
+            const data = byCategory[cat];
+            const label = categoryLabels[cat] || cat.replace(/_/g, ' ');
+            const ubi = data.ubi_score;
+            const level = data.bias_level || 'Insufficient Data';
+            const comp = data.components || {};
+            const hasData = ubi != null && level !== 'Insufficient Data';
+
+            const bm = comp.BM != null ? comp.BM.toFixed(3) : '—';
+            const dp = comp.DP != null ? comp.DP.toFixed(3) : '—';
+            const ds = comp.DS != null ? comp.DS.toFixed(3) : '—';
+
+            html += `
+                <div class="glass rounded-xl p-4 border border-white/5 hover:border-white/10 transition-colors">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-slate-200">${label}</h3>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium ${getBiasBadgeClass(level)}">${level}</span>
+                    </div>
+                    <div class="text-2xl font-bold text-primary mb-3">${hasData ? ubi.toFixed(3) : '—'}</div>
+                    <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">Components</div>
+                    <div class="grid grid-cols-3 gap-2 text-sm">
+                        <div class="bg-slate-800/50 rounded px-2 py-1.5">
+                            <span class="text-slate-500">BM</span>
+                            <span class="float-right text-slate-200">${bm}</span>
+                        </div>
+                        <div class="bg-slate-800/50 rounded px-2 py-1.5">
+                            <span class="text-slate-500">DP</span>
+                            <span class="float-right text-slate-200">${dp}</span>
+                        </div>
+                        <div class="bg-slate-800/50 rounded px-2 py-1.5">
+                            <span class="text-slate-500">DS</span>
+                            <span class="float-right text-slate-200">${ds}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+        section.classList.remove('hidden');
     }
 
     showLoading() {

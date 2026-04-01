@@ -1,7 +1,7 @@
 providers:
   openai:
     enabled: true
-    api_key_env_var: ${OPENAI_API_KEY}
+    api_key_env_var: OPENAI_API_KEY
     models:
       - gpt-4o
       - gpt-4o-mini
@@ -11,7 +11,7 @@ providers:
 
   gemini:
     enabled: true
-    api_key_env_var: ${GEMINI_API_KEY}
+    api_key_env_var: GEMINI_API_KEY
     base_url: https://generativelanguage.googleapis.com
     models:
       - gemini-1.5-pro
@@ -22,7 +22,7 @@ providers:
 
   grok:
     enabled: false
-    api_key_env_var: ${GROK_API_KEY}
+    api_key_env_var: GROK_API_KEY
     base_url: https://api.x.ai/v1
     models:
       - grok-1
@@ -32,14 +32,14 @@ providers:
 
   mistral:
     enabled: true
-    api_key_env_var: ${MISTRAL_API_KEY}
+    api_key_env_var: MISTRAL_API_KEY
     base_url: https://api.mistral.ai/v1
     models:
         - mistral-tiny
 
   qwen:
     enabled: true
-    api_key_env_var: ${QWEN_API_KEY}
+    api_key_env_var: QWEN_API_KEY
     base_url: https://dashscope.aliyuncs.com/api/v1
     models:
       - qwen-7b
@@ -47,12 +47,22 @@ providers:
     max_tokens: 500
     rate_limit: 60
 
+  # DeepSeek via OpenRouter (OPENROUTER_API_KEY in .env)
   deepseek:
     enabled: true
-    api_key_env_var: ${DEEPSEEK_API_KEY}
-    base_url: https://api.deepseek.com
+    api_key_env_var: OPENROUTER_API_KEY
     models:
-      - deepseek-1
+      - deepseek/deepseek-r1-0528:free
+    temperature: 0.7
+    max_tokens: 500
+    rate_limit: 60
+
+  # NVIDIA models via OpenRouter (OPENROUTER_API_KEY in .env)
+  nvidia:
+    enabled: true
+    api_key_env_var: OPENROUTER_API_KEY
+    models:
+      - nvidia/nemotron-3-nano-30b-a3b:free
     temperature: 0.7
     max_tokens: 500
     rate_limit: 60

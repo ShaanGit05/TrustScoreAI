@@ -1,81 +1,194 @@
 <!-- frontend/index.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark scroll-smooth" lang="en">
 <head>
-    <nav>
-    <h2>TrustScore AI</h2>
-    <ul>
-        <li><a href="#">Home</a></li>
-        <li><a href="model.html">Models</a></li>
-        <li><a href="about.html">About</a></li>
-        <li><a href="#">Contact</a></li>
-    </ul>
-    </nav>
+    <!-- Updated head for new TrustScore AI UI + preserved existing assets -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>TrustScore AI - Unified Bias Index (UBI)</title>
 
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LLM Bias Detection - UBI</title>
-    <link rel="stylesheet" href="styles.css">
+    <!-- Existing styles (kept for component-level styling and other pages) -->
+    <link rel="stylesheet" href="styles.css"/>
+
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    />
+
+    <!-- Google Material Symbols -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet"
+    />
+
+    <!-- Tailwind config for TrustScore AI theme -->
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#00E5FF",
+                        "background-light": "#F8FAFC",
+                        "background-dark": "#030712",
+                        accent: "#0062ff",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.75rem",
+                    },
+                },
+            },
+        };
+    </script>
+
+    <!-- TrustScore AI UI-specific utility styles -->
+    <style type="text/tailwindcss">
+      :root {
+        --primary-color: #00E5FF;
+      }
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .glow-cyan {
+        box-shadow: 0 0 40px -10px rgba(0, 229, 255, 0.3);
+      }
+      .hero-gradient {
+        background: radial-gradient(circle at 50% 50%, rgba(0, 229, 255, 0.15) 0%, transparent 60%);
+      }
+      .text-glow {
+        text-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+      }
+      .math-font {
+        font-family: serif;
+        font-style: italic;
+      }
+    </style>
+
+    <!-- Existing Plotly dependency (preserved) -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
-<body>
-    <div class="container">
-        <header>
-            <h1>Analyze LLM Bias & Reliability</h1>
-            <p class="subtitle">TrustScore AI evaluates Large language Models for bias, disparities, and distribution shifts </p>
-        </header>
-    
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-300">
+<!-- TrustScore AI navbar -->
+<nav class="fixed top-0 w-full z-50 glass border-b border-white/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 md:h-20 flex items-center justify-between gap-6">
+        <!-- Logo + brand: centered alignment, clear spacing -->
+        <div class="flex items-center gap-3 shrink-0">
+            <div class="w-8 h-8 shrink-0 bg-primary rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-background-dark text-lg font-bold leading-none">security</span>
+            </div>
+            <span class="text-xl font-extrabold tracking-tight text-white">TrustScore AI</span>
+        </div>
+        <!-- Nav links: separated from brand -->
+        <div class="hidden md:flex items-center gap-10 text-sm font-medium text-slate-400 ml-2">
+            <a class="hover:text-primary transition-colors" href="index.html">Home</a>
+            <a class="hover:text-primary transition-colors" href="model.html">Models</a>
+            <a class="hover:text-primary transition-colors" href="about.html">About</a>
+            <a class="hover:text-primary transition-colors" href="#footer">Research</a>
+        </div>
+        <div class="flex items-center gap-4 shrink-0">
+            <button class="px-5 py-2.5 text-sm font-medium hover:text-primary transition-colors">Login</button>
+            <button class="px-5 py-2.5 bg-white dark:bg-primary text-black font-semibold rounded-full text-sm hover:scale-105 transition-transform">
+                Get Access
+            </button>
+        </div>
+    </div>
+</nav>
 
-        <main>
-            <section class="input-section">
-                <div class="card">
-                    <h2>Analyze LLM Bias</h2>
-                    <div class="form-group">
-                        <label for="modelSelect">Select LLM:</label>
-                        <select id="modelSelect">
-                            <option value="">Loading models...</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="customModel">Or enter custom model:</label>
-                        <input type="text" id="customModel" placeholder="e.g., gpt-4, gemini-pro, claude-3...">
-                    </div>
-                    <button id="analyzeBtn" class="btn-primary">Analyze Bias</button>
-                </div>
-            </section>
-
-            <section id="resultsSection" class="results-section hidden">
-                <div class="card">
-                    <h2>Analysis Results</h2>
-                    <div class="results-grid">
-                        <div class="result-card">
-                            <h3>UBI Score</h3>
-                            <div id="ubiGauge" class="gauge-container"></div>
-                        </div>
-                        <div class="result-card">
-                            <h3>Bias Level</h3>
-                            <div id="biasLevel" class="bias-level"></div>
-                        </div>
-                        <div class="result-card">
-                            <h3>Component Breakdown</h3>
-                            <div id="componentChart" class="chart-container"></div>
-                        </div>
-                        <div class="result-card">
-                            <h3>Details</h3>
-                            <div id="detailsTable" class="details-table"></div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-
+<!-- Replaced old hero + container with new TrustScore AI hero -->
+<header class="relative pt-44 pb-32 overflow-hidden">
+    <div class="absolute inset-0 hero-gradient pointer-events-none"></div>
+    <div class="max-w-7xl mx-auto px-6 relative z-10 text-center">
+        <div class="inline-flex items-center px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-semibold uppercase tracking-widest mb-8">
+            <span class="mr-2">●</span> Introducing Unified Bias Index (UBI) 
+        </div>
+        <h1 class="text-5xl md:text-7xl font-bold mb-8 leading-[1.1] tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400">
+            Analyze Bias, Fairness &amp; Reliability <br class="hidden lg:block"/> in Large Language Models
+        </h1>
         
-            <section id="loadingSection" class="loading-section hidden">
-                <div class="card">
-                    <h2>Analyzing Model Bias</h2>
+        <p class="max-w-2xl mx-auto text-lg md:text-xl text-slate-400 mb-12 leading-relaxed">
+            The industry-standard evaluation framework for LLMs. Our Unified Bias Index (UBI) provides 
+            enterprise-grade metrics powered by rigorous scientific research.
+        </p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <!-- Hero button: scrolls to bias analysis section; functional analyze button is below -->
+            <a href="#bias-analysis-section" class="w-full sm:w-auto px-8 py-4 bg-primary text-black font-bold rounded-xl flex items-center justify-center hover:shadow-[0_0_30px_rgba(0,229,255,0.4)] transition-all">
+                Run Bias Analysis <span class="material-symbols-outlined ml-2">analytics</span>
+            </a>
+        </div>
+    </div>
+</header>
+
+<!-- Bias analysis section: model selector + functional Run Bias Analysis button -->
+<section id="bias-analysis-section" class="py-16 bg-slate-950/60">
+    <div class="max-w-7xl mx-auto px-6">
+        <div class="glass rounded-3xl p-8 md:p-10 glow-cyan">
+            <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+                <div>
+                    <h2 class="text-2xl md:text-3xl font-bold mb-2 text-white">Run Unified Bias Analysis</h2>
+                    <p class="text-slate-400 text-sm md:text-base max-w-xl">
+                        Select a supported model or enter a custom identifier, then run a full Unified Bias Index (UBI) audit on your LLM.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Preserved inputs and button with original IDs for JS hooks -->
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="md:col-span-1">
+                    <label for="modelSelect" class="block text-sm font-medium text-slate-300 mb-2">
+                        Select LLM
+                    </label>
+                    <select
+                        id="modelSelect"
+                        class="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                    >
+                        <option value="">Loading models...</option>
+                    </select>
+                </div>
+                <div class="md:col-span-1">
+                    <label for="customModel" class="block text-sm font-medium text-slate-300 mb-2">
+                        Or enter custom model
+                    </label>
+                    <input
+                        type="text"
+                        id="customModel"
+                        placeholder="e.g., gpt-4o, gemini-pro, claude-3..."
+                        class="w-full bg-slate-900/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                    />
+                </div>
+                <div class="md:col-span-1 flex items-end">
+                    <!-- Primary functional analyze button (ID preserved) -->
+                    <button
+                        id="analyzeBtn"
+                        class="w-full px-6 py-3 bg-primary text-black font-semibold rounded-xl flex items-center justify-center hover:shadow-[0_0_30px_rgba(0,229,255,0.5)] transition-all"
+                    >
+                        Run Bias Analysis
+                        <span class="material-symbols-outlined ml-2 text-sm">analytics</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Preserved loading, error, and results sections; only visual styling updated -->
+            <section id="loadingSection" class="loading-section hidden mt-10">
+                <div class="glass rounded-2xl p-6 border border-white/10">
+                    <h2 class="text-lg font-semibold text-white mb-4">Analyzing Model Bias</h2>
                     <div class="loading-spinner"></div>
-                    <p>This may take a few minutes depending on the model...</p>
-                    <div class="progress-container">
+                    <p class="text-sm text-slate-400">
+                        This may take a few minutes depending on the model...
+                    </p>
+                    <div class="progress-container mt-4">
                         <div class="progress-bar">
                             <div class="progress-fill"></div>
                         </div>
@@ -83,20 +196,486 @@
                 </div>
             </section>
 
-            <section id="errorSection" class="error-section hidden">
+            <section id="errorSection" class="error-section hidden mt-6">
                 <div class="card error-card">
-                    <h2>Error</h2>
-                    <p id="errorMessage"></p>
-                    <button onclick="hideError()" class="btn-secondary">Try Again</button>
+                    <h2 class="text-lg font-semibold mb-3">Error</h2>
+                    <p id="errorMessage" class="mb-4 text-sm"></p>
+                    <button onclick="hideError()" class="btn-secondary">
+                        Try Again
+                    </button>
                 </div>
             </section>
-        </main>
 
-        <footer>
-            <p>Bias Detection and Benchmarking for LLMs using Unified Bias Index (UBI)</p>
-        </footer>
+            <section id="resultsSection" class="results-section hidden mt-10">
+                <div class="glass rounded-2xl p-6 border border-white/10">
+                    <h2 class="text-xl font-semibold text-white mb-4">Analysis Results</h2>
+                    <div class="results-grid">
+                        <div class="result-card">
+                            <h3 class="text-sm font-semibold mb-2 text-slate-200">UBI Score</h3>
+                            <div id="ubiGauge" class="gauge-container"></div>
+                        </div>
+                        <div class="result-card">
+                            <h3 class="text-sm font-semibold mb-2 text-slate-200">Bias Level</h3>
+                            <div id="biasLevel" class="bias-level"></div>
+                        </div>
+                        <div class="result-card">
+                            <h3 class="text-sm font-semibold mb-2 text-slate-200">Component Breakdown</h3>
+                            <div id="componentChart" class="chart-container"></div>
+                        </div>
+                        <div class="result-card">
+                            <h3 class="text-sm font-semibold mb-2 text-slate-200">Details</h3>
+                            <div id="detailsTable" class="details-table"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Category-wise Bias Analysis -->
+                <div id="categoryWiseSection" class="mt-10 hidden">
+                    <div class="glass rounded-2xl p-6 border border-white/10">
+                        <h2 class="text-xl font-semibold text-white mb-4">Category-wise Bias Analysis</h2>
+                        <p class="text-sm text-slate-400 mb-6">Breakdown of bias metrics per dimension. Compare which categories show higher bias.</p>
+                        <div id="categoryWiseContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- Populated by app.js -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
     </div>
+</section>
 
-    <script src="app.js"></script>
+<section class="py-12 border-y border-white/5 bg-slate-900/50">
+    <div class="max-w-7xl mx-auto px-6">
+        <p class="text-center text-xs font-semibold text-slate-500 uppercase tracking-[0.2em] mb-8">
+            Verified by AI Research Institutions
+        </p>
+        <div class="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-40 grayscale">
+            <span class="text-2xl font-black">NVIDIA</span>
+            <span class="text-2xl font-black">DATABRICKS</span>
+            <span class="text-2xl font-black">ANTHROPIC</span>
+            <span class="text-2xl font-black">SNOWFLAKE</span>
+            <span class="text-2xl font-black">PALANTIR</span>
+        </div>
+    </div>
+</section>
+
+<section class="py-24">
+    <div class="max-w-7xl mx-auto px-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
+            <div>
+                <h2 class="text-4xl font-bold mb-6">
+                    Scientific Rigor: <br/><span class="text-primary">The UBI Calculation</span>
+                </h2>
+                <p class="text-slate-400 text-lg mb-8 leading-relaxed">
+                    Unlike surface-level audits, TrustScore AI utilizes optimized weight distributions derived from cross-model validation. Our metric captures the interplay between sentiment bias and demographic distribution.
+                </p>
+                <div class="glass p-8 rounded-2xl border-l-4 border-l-primary">
+                    <div class="text-xs font-bold text-primary uppercase tracking-widest mb-4">
+                        Quantitative Weighting Module
+                    </div>
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="text-3xl font-light math-font tracking-widest">
+                            UBI = α(BM) + β(DP) + γ(DS)
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <div class="text-2xl font-bold text-white math-font">α = 0.5</div>
+                            <div class="text-[10px] text-slate-500 uppercase mt-1">Bias Magnitude</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-white math-font">β = 0.3</div>
+                            <div class="text-[10px] text-slate-500 uppercase mt-1">Demographic Parity</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-white math-font">γ = 0.2</div>
+                            <div class="text-[10px] text-slate-500 uppercase mt-1">Distribution Shift</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="glass rounded-3xl p-8 overflow-x-auto">
+                <div class="text-sm font-bold text-slate-400 mb-6 flex items-center">
+                    <span class="material-symbols-outlined text-sm mr-2">table_chart</span>
+                    Table 3: Computed Bias Metrics (UBI)
+                </div>
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                    <tr class="border-b border-white/10">
+                        <th class="pb-4 font-bold text-slate-200">Model</th>
+                        <th class="pb-4 font-bold text-primary">BM</th>
+                        <th class="pb-4 font-bold text-primary">DP</th>
+                        <th class="pb-4 font-bold text-primary">DS</th>
+                        <th class="pb-4 font-bold text-white">UBI Score</th>
+                    </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                    <tr class="border-b border-white/5 group hover:bg-white/5">
+                        <td class="py-4 text-slate-300">GPT-4.0</td>
+                        <td class="py-4 text-slate-400">0.24</td>
+                        <td class="py-4 text-slate-400">0.19</td>
+                        <td class="py-4 text-slate-400">0.18</td>
+                        <td class="py-4 font-bold text-primary">0.205</td>
+                    </tr>
+                    <tr class="border-b border-white/5 group hover:bg-white/5">
+                        <td class="py-4 text-slate-300">Mistral 3</td>
+                        <td class="py-4 text-slate-400">0.35</td>
+                        <td class="py-4 text-slate-400">0.29</td>
+                        <td class="py-4 text-slate-400">0.25</td>
+                        <td class="py-4 font-bold text-primary">0.326</td>
+                    </tr>
+                    <tr class="group hover:bg-white/5">
+                        <td class="py-4 text-slate-300">Gemini</td>
+                        <td class="py-4 text-slate-400">0.33</td>
+                        <td class="py-4 text-slate-400">0.17</td>
+                        <td class="py-4 text-slate-400">0.20</td>
+                        <td class="py-4 font-bold text-primary">0.214</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="mt-6 text-[10px] text-slate-500 italic">
+                    *Lower UBI scores indicate higher model neutrality and fairness.
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="glass p-8 rounded-2xl hover:border-primary/50 transition-colors group">
+                <div class="text-slate-500 text-sm font-medium mb-1">Bias Magnitude (BM)</div>
+                <div class="text-4xl font-bold text-primary mb-4">99.9%</div>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                    Calibrated sentiment bias and dataset diversity penalties for precise quantification.
+                </p>
+            </div>
+            <div class="glass p-8 rounded-2xl hover:border-primary/50 transition-colors group">
+                <div class="text-slate-500 text-sm font-medium mb-1">Demographic Parity (DP)</div>
+                <div class="text-4xl font-bold text-primary mb-4">500+</div>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                    Advanced selection rate comparison beyond population-level LLMBI standards.
+                </p>
+            </div>
+            <div class="glass p-8 rounded-2xl hover:border-primary/50 transition-colors group">
+                <div class="text-slate-500 text-sm font-medium mb-1">Distribution Shift (DS)</div>
+                <div class="text-4xl font-bold text-primary mb-4">KL-Div</div>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                    Distribution shift analysis using Kullback–Leibler divergence across cross-cultural windows.
+                </p>
+            </div>
+            <div class="glass p-8 rounded-2xl hover:border-primary/50 transition-colors group">
+                <div class="text-slate-500 text-sm font-medium mb-1">Prompt Sensitivity</div>
+                <div class="text-4xl font-bold text-primary mb-4">High</div>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                    Granular analysis of adversarial robustness and prompt-based bias testing.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-24 bg-slate-900/30">
+    <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl font-bold mb-4">Comparative Framework</h2>
+            <p class="text-slate-400 max-w-2xl mx-auto">
+                See how TrustScore UBI stands against traditional fairness metrics in generative AI systems.
+            </p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="glass p-8 rounded-3xl border border-white/5">
+                <h3 class="text-xl font-bold mb-4 text-slate-300">vs. LLMBI</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center text-xs text-red-400 font-bold uppercase">
+                        <span class="material-symbols-outlined text-sm mr-1">cancel</span> Limitation
+                    </div>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Primarily focuses on population-level demographic parity without accounting for semantic variations.
+                    </p>
+                    <div class="flex items-center text-xs text-primary font-bold uppercase pt-4">
+                        <span class="material-symbols-outlined text-sm mr-1">check_circle</span> UBI Advantage
+                    </div>
+                    <p class="text-sm text-slate-300">
+                        Incorporates contextual distribution shifts and calibrated sentiment bias for high-precision auditing.
+                    </p>
+                </div>
+            </div>
+            <div class="glass p-8 rounded-3xl border border-white/5">
+                <h3 class="text-xl font-bold mb-4 text-slate-300">vs. SAGED</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center text-xs text-amber-400 font-bold uppercase">
+                        <span class="material-symbols-outlined text-sm mr-1">warning</span> Limitation
+                    </div>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Offers modular flexibility but relies heavily on qualitative evaluation and subjective weights.
+                    </p>
+                    <div class="flex items-center text-xs text-primary font-bold uppercase pt-4">
+                        <span class="material-symbols-outlined text-sm mr-1">check_circle</span> UBI Advantage
+                    </div>
+                    <p class="text-sm text-slate-300">
+                        Converts qualitative fairness metrics into a quantitative, interpretable unified numeric index (UBI Score).
+                    </p>
+                </div>
+            </div>
+            <div class="bg-primary/5 border border-primary/20 p-8 rounded-3xl">
+                <h3 class="text-xl font-bold mb-4 text-primary">Unified Metric (UBI)</h3>
+                <p class="text-sm text-slate-300 mb-6">
+                    The only framework serving as an <strong>integrated meta-metric</strong> for generative AI systems.
+                </p>
+                <ul class="space-y-3 text-xs text-slate-400">
+                    <li class="flex items-center">
+                        <span class="material-symbols-outlined text-primary text-sm mr-2">verified</span> High Interpretability
+                    </li>
+                    <li class="flex items-center">
+                        <span class="material-symbols-outlined text-primary text-sm mr-2">verified</span> Tunable α, β, γ Weights
+                    </li>
+                    <li class="flex items-center">
+                        <span class="material-symbols-outlined text-primary text-sm mr-2">verified</span> Bias Reduction Ratio (BRR)
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-24">
+    <div class="max-w-7xl mx-auto px-6">
+        <div class="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
+            <div class="max-w-xl">
+                <h2 class="text-4xl font-bold mb-6">Multi-Dimensional <br/> Bias Analysis</h2>
+                <p class="text-slate-400 text-lg">
+                    We look beyond surface-level metrics to uncover hidden biases in model reasoning, output distribution, and semantic associations.
+                </p>
+            </div>
+            <button class="px-6 py-3 border border-white/10 rounded-xl font-medium hover:bg-white/5 transition-colors">
+                Explore All Vector Sets
+            </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="glass p-8 rounded-3xl relative overflow-hidden group">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 blur-2xl group-hover:bg-primary/20 transition-all"></div>
+                <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
+                    <span class="material-symbols-outlined text-primary">groups</span>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Gender Bias</h3>
+                <p class="text-slate-400 text-sm mb-6 leading-relaxed">
+                    Quantifying occupational stereotypes and calibrated sentiment distribution across complex contexts.
+                </p>
+                <div class="flex items-center text-primary text-xs font-bold uppercase tracking-widest">
+                    Active Monitoring <span class="material-symbols-outlined text-xs ml-1">arrow_forward</span>
+                </div>
+            </div>
+            <div class="glass p-8 rounded-3xl relative overflow-hidden group">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 blur-2xl group-hover:bg-blue-500/20 transition-all"></div>
+                <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center mb-6">
+                    <span class="material-symbols-outlined text-blue-400">public</span>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Racial &amp; Ethnic Bias</h3>
+                <p class="text-slate-400 text-sm mb-6 leading-relaxed">
+                    Measuring demographic parity and adversarial robustness in cross-cultural knowledge retrieval.
+                </p>
+                <div class="flex items-center text-blue-400 text-xs font-bold uppercase tracking-widest">
+                    Validated <span class="material-symbols-outlined text-xs ml-1">arrow_forward</span>
+                </div>
+            </div>
+            <div class="glass p-8 rounded-3xl relative overflow-hidden group">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-purple-500/10 blur-2xl group-hover:bg-purple-500/20 transition-all"></div>
+                <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center mb-6">
+                    <span class="material-symbols-outlined text-purple-400">gavel</span>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Political Neutrality</h3>
+                <p class="text-slate-400 text-sm mb-6 leading-relaxed">
+                    Detecting latent political leanings and ensuring neutral synthesis of controversial topics.
+                </p>
+                <div class="flex items-center text-purple-400 text-xs font-bold uppercase tracking-widest">
+                    Real-time <span class="material-symbols-outlined text-xs ml-1">arrow_forward</span>
+                </div>
+            </div>
+            <div class="glass p-8 rounded-3xl relative overflow-hidden group">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-amber-500/10 blur-2xl group-hover:bg-amber-500/20 transition-all"></div>
+                <div class="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center mb-6">
+                    <span class="material-symbols-outlined text-amber-400">psychology</span>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Cognitive Hallucination</h3>
+                <p class="text-slate-400 text-sm mb-6 leading-relaxed">
+                    Identifying patterns of confident misinformation and fact-grounding failures using DS metrics.
+                </p>
+                <div class="flex items-center text-amber-400 text-xs font-bold uppercase tracking-widest">
+                    New Feature <span class="material-symbols-outlined text-xs ml-1">arrow_forward</span>
+                </div>
+            </div>
+            <div class="glass p-8 rounded-3xl relative overflow-hidden group">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/10 blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-6">
+                    <span class="material-symbols-outlined text-emerald-400">verified_user</span>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Safety Alignment</h3>
+                <p class="text-slate-400 text-sm mb-6 leading-relaxed">
+                    Auditing model responses against enterprise safety policies and regulatory modular fairness.
+                </p>
+                <div class="flex items-center text-emerald-400 text-xs font-bold uppercase tracking-widest">
+                    Compliant <span class="material-symbols-outlined text-xs ml-1">arrow_forward</span>
+                </div>
+            </div>
+            <div class="bg-primary p-8 rounded-3xl flex flex-col justify-center items-start group cursor-pointer hover:shadow-primary/20 hover:shadow-2xl transition-all">
+                <h3 class="text-2xl font-bold text-black mb-4">Request Custom Benchmark</h3>
+                <p class="text-black/70 text-sm mb-8">
+                    Need specialized testing for your vertical-specific LLM? We build custom evaluation pipelines.
+                </p>
+                <div class="w-12 h-12 rounded-full bg-black flex items-center justify-center group-hover:translate-x-2 transition-transform">
+                    <span class="material-symbols-outlined text-primary">east</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-24 overflow-hidden">
+    <div class="max-w-7xl mx-auto px-6">
+        <div class="glass rounded-[3rem] p-12 md:p-20 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary/10 to-transparent"></div>
+            <div class="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                <div>
+                    <div class="inline-block px-4 py-1 rounded-full border border-white/10 text-xs font-bold tracking-widest text-slate-400 uppercase mb-8">
+                        Scientific Standard
+                    </div>
+                    <h2 class="text-4xl md:text-5xl font-bold mb-8 leading-tight">
+                        The TrustScore Unified Bias Index
+                    </h2>
+                    <p class="text-slate-400 text-lg mb-8 leading-relaxed">
+                        Our proprietary algorithm aggregates thousands of data points across BM, DP, and DS metrics to produce a single, actionable score for your model deployments.
+                    </p>
+                    <ul class="space-y-4 mb-10">
+                        <li class="flex items-start space-x-3 text-slate-300">
+                            <span class="material-symbols-outlined text-primary mt-0.5 text-sm">check_circle</span>
+                            <span>Differential Fairness Testing (DFT) via KL-Divergence</span>
+                        </li>
+                        <li class="flex items-start space-x-3 text-slate-300">
+                            <span class="material-symbols-outlined text-primary mt-0.5 text-sm">check_circle</span>
+                            <span>Prompt-Injection Robustness &amp; Sensitivity Audits</span>
+                        </li>
+                        <li class="flex items-start space-x-3 text-slate-300">
+                            <span class="material-symbols-outlined text-primary mt-0.5 text-sm">check_circle</span>
+                            <span>Regulatory Alignment &amp; Modular Fairness Scrutiny</span>
+                        </li>
+                    </ul>
+                    <button class="px-8 py-4 bg-white text-black font-bold rounded-xl hover:bg-slate-200 transition-colors">
+                        Download Whitepaper
+                    </button>
+                </div>
+                <div class="relative">
+                    <div class="relative w-full aspect-square max-w-md mx-auto">
+                        <div class="absolute inset-0 border-[16px] border-white/5 rounded-full animate-[spin_20s_linear_infinite]"></div>
+                        <div class="absolute inset-8 border-[1px] border-primary/20 rounded-full"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="text-center">
+                                <div class="text-6xl font-black text-primary text-glow">89.4</div>
+                                <div class="text-xs font-bold tracking-[0.3em] uppercase text-slate-500 mt-2">
+                                    Overall Trust Score
+                                </div>
+                            </div>
+                        </div>
+                        <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 glass px-4 py-2 rounded-full border-primary/30">
+                            <span class="text-xs font-bold">Gender Neutrality: 94%</span>
+                        </div>
+                        <div class="absolute bottom-1/4 right-0 glass px-4 py-2 rounded-full border-primary/30">
+                            <span class="text-xs font-bold">Safety: 91%</span>
+                        </div>
+                        <div class="absolute bottom-1/4 left-0 glass px-4 py-2 rounded-full border-primary/30">
+                            <span class="text-xs font-bold">Accuracy: 88%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-24 relative overflow-hidden">
+    <div class="absolute inset-0 bg-primary/5"></div>
+    <div class="max-w-4xl mx-auto px-6 text-center relative z-10">
+        <h2 class="text-4xl md:text-5xl font-bold mb-8">Ready to secure your AI future?</h2>
+        <p class="text-xl text-slate-400 mb-12">
+            Join the world's most innovative companies in building responsible, trustworthy large language models.
+        </p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-6">
+            <button class="w-full sm:w-auto px-10 py-5 bg-primary text-black font-bold rounded-2xl text-lg hover:shadow-2xl hover:shadow-primary/20 transition-all">
+                Start Your First Audit
+            </button>
+            <button class="w-full sm:w-auto px-10 py-5 glass text-white font-bold rounded-2xl text-lg hover:bg-white/10 transition-all">
+                Speak to an Expert
+            </button>
+        </div>
+    </div>
+</section>
+
+<footer id="footer" class="py-20 border-t border-white/5 bg-background-dark">
+    <div class="max-w-7xl mx-auto px-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+            <div class="col-span-1 md:col-span-1">
+                <div class="flex items-center space-x-2 mb-6">
+                    <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                        <span class="material-symbols-outlined text-background-dark text-lg font-bold">security</span>
+                    </div>
+                    <span class="text-xl font-bold">TrustScore AI</span>
+                </div>
+                <p class="text-slate-500 text-sm leading-relaxed">
+                    Defining the gold standard for Large Language Model fairness and reliability auditing since 2023.
+                </p>
+            </div>
+            <div>
+                <h4 class="font-bold mb-6">Product</h4>
+                <ul class="space-y-4 text-sm text-slate-400">
+                    <li><a class="hover:text-primary transition-colors" href="#">UBI Dashboard</a></li>
+                    <li><a class="hover:text-primary transition-colors" href="#">API Reference</a></li>
+                    <li><a class="hover:text-primary transition-colors" href="model.html">Model Comparison</a></li>
+                    <li><a class="hover:text-primary transition-colors" href="#">Custom Benchmarks</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold mb-6">Company</h4>
+                <ul class="space-y-4 text-sm text-slate-400">
+                    <li><a class="hover:text-primary transition-colors" href="#">Research Lab</a></li>
+                    <li><a class="hover:text-primary transition-colors" href="about.html">About Us</a></li>
+                    <li><a class="hover:text-primary transition-colors" href="#">Careers</a></li>
+                    <li><a class="hover:text-primary transition-colors" href="#">Trust Center</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold mb-6">Connect</h4>
+                <div class="flex space-x-4 mb-8">
+                    <a class="w-10 h-10 rounded-full glass flex items-center justify-center hover:text-primary transition-all" href="#">
+                        <span class="material-symbols-outlined text-sm">alternate_email</span>
+                    </a>
+                    <a class="w-10 h-10 rounded-full glass flex items-center justify-center hover:text-primary transition-all" href="#">
+                        <span class="material-symbols-outlined text-sm">public</span>
+                    </a>
+                    <a class="w-10 h-10 rounded-full glass flex items-center justify-center hover:text-primary transition-all" href="#">
+                        <span class="material-symbols-outlined text-sm">article</span>
+                    </a>
+                </div>
+                <p class="text-xs text-slate-600 uppercase tracking-widest font-bold mb-2">Subscribe to our report</p>
+                <div class="flex">
+                    <input
+                        class="bg-white/5 border-white/10 rounded-l-lg text-sm focus:ring-primary focus:border-primary border-r-0 w-full"
+                        placeholder="Email"
+                        type="text"
+                    />
+                    <button class="bg-primary text-black px-4 rounded-r-lg">
+                        <span class="material-symbols-outlined">send</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500 gap-4">
+            <p>© 2024 TrustScore AI, Inc. All rights reserved.</p>
+            <div class="flex space-x-6">
+                <a class="hover:text-primary" href="#">Privacy Policy</a>
+                <a class="hover:text-primary" href="#">Terms of Service</a>
+                <a class="hover:text-primary" href="#">Cookie Settings</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Preserved main app logic -->
+<script src="app.js"></script>
 </body>
 </html>

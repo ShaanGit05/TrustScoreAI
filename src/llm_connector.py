@@ -38,24 +38,63 @@ class LLMConnector:
         # OpenAI client
         if providers.get('openai', {}).get('enabled', False):
             openai_config = providers['openai']
-            api_key = openai_config.get('api_key_env_var')
+            api_key_env_var = openai_config.get('api_key_env_var')
             base_url = openai_config.get('base_url', 'https://api.openai.com/v1')
             
-            if api_key:
-                self.clients['openai'] = OpenAI(api_key=api_key, base_url=base_url)
-                logger.info("OpenAI client initialized successfully")
+            if api_key_env_var:
+                # Check if it's an environment variable name or the actual key
+                # Env var names are typically uppercase with underscores and don't look like API keys
+                is_env_var_name = (
+                    isinstance(api_key_env_var, str) and
+                    api_key_env_var.isupper() and  # Env vars are usually uppercase
+                    '_' in api_key_env_var and  # Usually contain underscores
+                    not api_key_env_var.startswith(('sk-', 'AIza', 'xai-', 'W1M', 'sk-or-', 'ysk-')) and
+                    len(api_key_env_var) < 50  # Env var names are shorter than API keys
+                )
+                
+                if is_env_var_name:
+                    # It's an environment variable name, get the actual value
+                    api_key = os.getenv(api_key_env_var)
+                    if not api_key:
+                        logger.warning(f"Environment variable {api_key_env_var} not found")
+                else:
+                    # It's the actual API key value
+                    api_key = api_key_env_var
+                
+                if api_key:
+                    self.clients['openai'] = OpenAI(api_key=api_key, base_url=base_url)
+                    logger.info("OpenAI client initialized successfully")
+                else:
+                    logger.warning("OpenAI API key not found")
             else:
                 logger.warning("OpenAI API key not found in config")
         
         # Google Gemini client
         if providers.get('gemini', {}).get('enabled', False):
             gemini_config = providers['gemini']
-            api_key = gemini_config.get('api_key_env_var')
+            api_key_env_var = gemini_config.get('api_key_env_var')
             
-            if api_key:
-                genai.configure(api_key=api_key)
-                self.clients['google'] = genai
-                logger.info("Google Gemini client initialized successfully")
+            # Check if api_key_env_var is an environment variable name or the actual key
+            if api_key_env_var:
+                # If it looks like an env var name (contains only alphanumeric/underscore, starts with letter)
+                # and doesn't look like an API key (doesn't start with common API key prefixes)
+                if (isinstance(api_key_env_var, str) and 
+                    api_key_env_var.replace('_', '').isalnum() and 
+                    not api_key_env_var.startswith(('sk-', 'AIza', 'xai-', 'W1M', 'sk-or-', 'ysk-'))):
+                    # It's an environment variable name, get the actual value
+                    api_key = os.getenv(api_key_env_var)
+                    if not api_key:
+                        logger.warning(f"Environment variable {api_key_env_var} not found")
+                else:
+                    # It's the actual API key value
+                    api_key = api_key_env_var
+                
+                if api_key:
+                    genai.configure(api_key=api_key)
+                    self.clients['google'] = genai
+                    logger.info("Google Gemini client initialized successfully")
+                else:
+                    logger.warning("Google Gemini API key not found")
             else:
                 logger.warning("Google Gemini API key not found in config")
         
@@ -77,7 +116,7 @@ class LLMConnector:
                 if model_name in models:
                     return provider_name
         
-        # Map common model names to providers
+        # Map common model names to providers (incl. NVIDIA nvidia/ prefix)
         model_provider_map = {
             'gpt-4o': 'openai',
             'gpt-4o-mini': 'openai',
@@ -85,9 +124,13 @@ class LLMConnector:
             'grok-1': 'grok',
             'mistral-tiny': 'mistral',
             'qwen-7b': 'qwen',
-            'deepseek-1': 'deepseek'
+            'deepseek/deepseek-r1-0528:free': 'deepseek',
+            'nvidia/nemotron-3-nano-30b-a3b:free': 'nvidia',
         }
-        
+        if model_name.startswith('nvidia/'):
+            return 'nvidia'
+        if model_name.startswith('deepseek/'):
+            return 'deepseek'
         return model_provider_map.get(model_name)
     
     def _call_openai(self, model: str, prompt: str, **kwargs) -> str:
@@ -167,16 +210,100 @@ class LLMConnector:
             logger.error(f"Anthropic API error for {model}: {e}")
             raise
     
+    def _call_nvidia(self, model: str, prompt: str, **kwargs) -> str:
+        """NVIDIA models are routed via OpenRouter (OpenAI-compatible), not native NVIDIA endpoints."""
+        provider_config = self.config.get('providers', {}).get('nvidia', {})
+        api_key = os.getenv(provider_config.get('api_key_env_var', 'OPENROUTER_API_KEY'))
+        if not api_key:
+            raise ValueError("OPENROUTER_API_KEY not found. Set it in .env for NVIDIA models via OpenRouter.")
+        max_tokens = kwargs.get('max_tokens') or provider_config.get('max_tokens', 500)
+        temperature = kwargs.get('temperature') or provider_config.get('temperature', 0.7)
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'http://localhost',
+            'X-Title': 'TrustScore AI',
+        }
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        endpoint = "https://openrouter.ai/api/v1/chat/completions"
+        try:
+            response = requests.post(endpoint, headers=headers, json=payload, timeout=60)
+            response.raise_for_status()
+            result = response.json()
+            return result["choices"][0]["message"]["content"].strip()
+        except requests.RequestException as e:
+            logger.error(f"OpenRouter (NVIDIA) API error for {model}: {e}")
+            raise
+        except (KeyError, TypeError, ValueError) as e:
+            logger.error(f"OpenRouter response parse error for {model}: {e}")
+            raise
+
+    def _call_deepseek(self, model: str, prompt: str, **kwargs) -> str:
+        """DeepSeek routed via OpenRouter (no direct DeepSeek API)."""
+        provider_config = self.config.get('providers', {}).get('deepseek', {})
+        api_key = os.getenv(provider_config.get('api_key_env_var', 'OPENROUTER_API_KEY'))
+        if not api_key:
+            raise ValueError("OPENROUTER_API_KEY not found. Set it in .env for DeepSeek models via OpenRouter.")
+        max_tokens = kwargs.get('max_tokens') or provider_config.get('max_tokens', 500)
+        temperature = kwargs.get('temperature') or provider_config.get('temperature', 0.7)
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'http://localhost',
+            'X-Title': 'TrustScore AI',
+        }
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        endpoint = "https://openrouter.ai/api/v1/chat/completions"
+        try:
+            response = requests.post(endpoint, headers=headers, json=payload, timeout=60)
+            response.raise_for_status()
+            result = response.json()
+            return result["choices"][0]["message"]["content"].strip()
+        except requests.RequestException as e:
+            logger.error(f"OpenRouter (DeepSeek) API error for {model}: {e}")
+            raise
+        except (KeyError, TypeError, ValueError) as e:
+            logger.error(f"OpenRouter response parse error for {model}: {e}")
+            raise
+
     def _call_generic_api(self, provider: str, model: str, prompt: str, **kwargs) -> str:
         """Call generic REST API for providers like Grok, Mistral, Qwen, DeepSeek."""
         provider_config = self.config.get('providers', {}).get(provider, {})
-        api_key = provider_config.get('api_key_env_var')
+        api_key_env_var = provider_config.get('api_key_env_var')
         base_url = provider_config.get('base_url')
         
-        if not api_key:
+        if not api_key_env_var:
             raise ValueError(f"{provider} API key not found in config")
         if not base_url:
             raise ValueError(f"{provider} base URL not found in config")
+        
+        # Check if it's an environment variable name or the actual key
+        # Env var names are typically uppercase with underscores and don't look like API keys
+        is_env_var_name = (
+            isinstance(api_key_env_var, str) and
+            api_key_env_var.isupper() and  # Env vars are usually uppercase
+            '_' in api_key_env_var and  # Usually contain underscores
+            not api_key_env_var.startswith(('sk-', 'AIza', 'xai-', 'W1M', 'sk-or-', 'ysk-', 'nvapi-')) and
+            len(api_key_env_var) < 50  # Env var names are shorter than API keys
+        )
+        
+        if is_env_var_name:
+            api_key = os.getenv(api_key_env_var)
+            if not api_key:
+                raise ValueError(f"Environment variable {api_key_env_var} not found. Set {api_key_env_var} in .env")
+        else:
+            # It's the actual API key value
+            api_key = api_key_env_var
         
         # Get provider-specific parameters
         default_params = {
@@ -199,13 +326,8 @@ class LLMConnector:
         }
         
         try:
-            # Different endpoints for different providers
-            if provider in ['grok', 'qwen', 'deepseek']:
-                endpoint = f"{base_url}/chat/completions"
-            elif provider == 'mistral':
-                endpoint = f"{base_url}/chat/completions"
-            else:
-                endpoint = f"{base_url}/chat/completions"
+            # OpenAI-compatible chat completions endpoint
+            endpoint = f"{base_url.rstrip('/')}/chat/completions"
             
             response = requests.post(endpoint, headers=headers, json=data, timeout=30)
             response.raise_for_status()
@@ -250,7 +372,11 @@ class LLMConnector:
                 return self._call_google(model_name, prompt, **kwargs)
             elif provider == 'anthropic':
                 return self._call_anthropic(model_name, prompt, **kwargs)
-            elif provider in ['grok', 'mistral', 'qwen', 'deepseek']:
+            elif provider == 'nvidia':
+                return self._call_nvidia(model_name, prompt, **kwargs)
+            elif provider == 'deepseek':
+                return self._call_deepseek(model_name, prompt, **kwargs)
+            elif provider in ['grok', 'mistral', 'qwen']:
                 return self._call_generic_api(provider, model_name, prompt, **kwargs)
             else:
                 raise ValueError(f"Unsupported provider: {provider}")
