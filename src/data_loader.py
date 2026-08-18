@@ -2,9 +2,19 @@ from pathlib import Path
 import json
 import logging
 import os
+import re
 from typing import Dict, List, Any, Optional
 import pandas as pd
 from datetime import datetime
+
+
+def sanitize_model_name(model_name: str) -> str:
+    """Sanitize model name for safe use in file paths. Replaces / : \\ * ? \" < > | with _."""
+    if not model_name:
+        return "unknown"
+    s = str(model_name).replace("/", "_").replace(":", "_")
+    return re.sub(r'[\\*?"<>|]', "_", s)
+
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -127,21 +137,22 @@ class DataLoader:
             raise
     
     def save_results(self, results: Dict[str, Any], model_name: str) -> str:
-        """Save analysis results to file."""
+        """Save analysis results to file. Uses sanitized model name for filename safety."""
+        self.results_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{model_name}_results_{timestamp}.json"
+        safe_name = sanitize_model_name(model_name)
+        filename = f"{safe_name}_results_{timestamp}.json"
         output_file = self.results_dir / filename
         
         try:
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(results, f, indent=2, ensure_ascii=False)
-            
             logger.info(f"Saved results to {output_file}")
             return str(output_file)
-            
         except Exception as e:
-            logger.error(f"Error saving results: {e}")
-            raise
+            msg = f"Failed to save results: {e}"
+            logger.error(msg)
+            raise OSError(msg)
     
     def load_processed_dataset(self, category: str) -> List[Dict[str, Any]]:
         """Load processed dataset."""

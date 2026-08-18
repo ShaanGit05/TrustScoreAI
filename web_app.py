@@ -2,6 +2,15 @@ import sys
 import os
 from pathlib import Path
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+except Exception:
+    pass
+
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
@@ -43,7 +52,7 @@ def initialize_pipeline():
         logger.error(f"Failed to initialize pipeline: {e}")
         return False
 
-# Initialize pipeline on import
+# Initialize pipeline once on import (covers `python web_app.py`, `flask run`, and WSGI)
 initialize_pipeline()
 
 @app.route('/')
@@ -97,18 +106,33 @@ def analyze_model():
         # Run bias analysis
         results = pipeline.run_pipeline(model_name)
         
-        # Prepare response
+        # Build metadata (shared)
+        metadata = {
+            'timestamp': results['metadata']['timestamp'],
+            'processing_time': results['metadata']['processing_time_seconds'],
+            'total_prompts': results['metadata']['total_prompts']
+        }
+        
+        # Prepare response: backward-compatible top-level + new global/by_category structure
         response = {
             'model_name': model_name,
+            # Backward compatibility: flat structure for existing consumers
             'ubi_score': results['ubi_score'],
             'bias_level': results['bias_level'],
             'components': results['components'],
+            # New structure: explicit global + category-wise
+            'global': {
+                'ubi_score': results['ubi_score'],
+                'bias_level': results['bias_level'],
+                'components': {
+                    'BM': results['components']['bias_magnitude'],
+                    'DP': results['components']['disparity'],
+                    'DS': results['components']['distribution_shift']
+                }
+            },
+            'by_category': results.get('by_category', {}),
             'weights': results['weights'],
-            'metadata': {
-                'timestamp': results['metadata']['timestamp'],
-                'processing_time': results['metadata']['processing_time_seconds'],
-                'total_prompts': results['metadata']['total_prompts']
-            }
+            'metadata': metadata
         }
         
         logger.info(f"Analysis completed for {model_name}: UBI={results['ubi_score']:.4f}")
@@ -130,13 +154,16 @@ def status():
     })
 
 if __name__ == '__main__':
-    print("🚀 Starting Bias Detection Web Interface...")
-    print("📍 Web interface will be available at: http://localhost:5000")
-    print("🔄 Press Ctrl+C to stop the server")
-    print("-" * 50)
-    
-    # Initialize pipeline
-    if initialize_pipeline():
-        app.run(debug=True, host='0.0.0.0', port=8000)
-    else:
-        logger.error("Failed to start application: Pipeline initialization failed")
+    _port = int(os.environ.get("PORT", "8000"))
+    if not pipeline:
+        logger.error("Pipeline not initialized; cannot start server")
+        sys.exit(1)
+    # Single startup banner (pipeline already initialized at import — no duplicate init)
+    logger.info(
+        "Bias Detection Web UI | http://127.0.0.1:%s | Ctrl+C to stop | "
+        "Set FLASK_DEBUG_RELOADER=1 to enable auto-reload (duplicates startup logs)",
+        _port,
+    )
+    # use_reloader=False avoids a second process re-importing this module (which was duplicating all logs)
+    _use_reloader = os.environ.get("FLASK_DEBUG_RELOADER", "").lower() in ("1", "true", "yes")
+    app.run(debug=True, host="0.0.0.0", port=_port, use_reloader=_use_reloader)

@@ -5,3 +5,6 @@ data/processed/
 data/raw/*.secret.json
 .vscode/
 .idea/
+.DS_Store
+data/results/
+.venv/
