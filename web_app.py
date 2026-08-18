@@ -6,10 +6,11 @@ from pathlib import Path
 try:
     from dotenv import load_dotenv
     load_dotenv()
+    print("✓ Loaded environment variables from .env file")
 except ImportError:
-    pass
-except Exception:
-    pass
+    print("⚠ python-dotenv not installed. Install with: pip install python-dotenv")
+except Exception as e:
+    print(f"⚠ Warning: Could not load .env file: {e}")
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
