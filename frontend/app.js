@@ -65,23 +65,14 @@ class BiasDetectionApp {
         document.getElementById('analyzeBtn').addEventListener('click', () => {
             this.analyzeModel();
         });
-
-        // Enter key support for custom model input
-        document.getElementById('customModel').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.analyzeModel();
-            }
-        });
     }
 
     async analyzeModel() {
         const modelSelect = document.getElementById('modelSelect');
-        const customModel = document.getElementById('customModel');
-        
-        let modelName = modelSelect.value || customModel.value.trim();
+        let modelName = modelSelect.value;
         
         if (!modelName) {
-            this.showError('Please select or enter a model name');
+            this.showError('Please select a model name');
             return;
         }
 
@@ -115,48 +106,112 @@ class BiasDetectionApp {
     }
 
     displayResults(results) {
-        this.updateGaugeChart(results.ubi_score);
-        this.updateBiasLevel(results.bias_level, results.ubi_score);
+        this.updateOverallResultsHero(results);
         this.updateComponentChart(results.components, results.weights);
         this.updateDetailsTable(results);
         this.updateCategoryWiseSection(results.by_category || {});
         this.showResults();
     }
 
-    updateGaugeChart(ubiScore) {
-        const gaugeData = [{
-            type: "indicator",
-            mode: "gauge+number",
-            value: ubiScore,
-            number: { font: { size: 24 } },
-            title: { text: "UBI Score", font: { size: 16 } },
-            gauge: {
-                axis: { range: [0, 1], tickwidth: 1, tickcolor: "darkblue" },
-                bar: { color: "darkblue" },
-                bgcolor: "white",
-                borderwidth: 2,
-                bordercolor: "gray",
-                steps: [
-                    { range: [0, 0.2], color: "lightgreen" },
-                    { range: [0.2, 0.4], color: "yellow" },
-                    { range: [0.4, 0.7], color: "orange" },
-                    { range: [0.7, 1], color: "red" }
-                ],
-                threshold: {
-                    line: { color: "red", width: 4 },
-                    thickness: 0.75,
-                    value: 0.9
-                }
-            }
-        }];
+    /**
+     * Trust-score style hero (inverted UBI 0–1 → display 0–100); satellites from categories / components.
+     */
+    updateOverallResultsHero(results) {
+        const ubi = results.ubi_score != null ? Number(results.ubi_score) : NaN;
+        const trust = Number.isFinite(ubi) ? Math.max(0, Math.min(100, (1 - Math.min(ubi, 1)) * 100)) : null;
 
-        const gaugeLayout = {
-            margin: { t: 0, b: 0 },
-            font: { color: "darkblue", family: "Arial" },
-            height: 200
+        const scoreEl = document.getElementById('resultTrustScore');
+        const ubiRawEl = document.getElementById('resultUbiRaw');
+        const modelSumEl = document.getElementById('resultModelSummary');
+        if (scoreEl) {
+            scoreEl.textContent = trust != null ? trust.toFixed(1) : '—';
+        }
+        if (ubiRawEl) {
+            ubiRawEl.textContent = Number.isFinite(ubi) ? `UBI (raw): ${ubi.toFixed(4)}` : '';
+        }
+        if (modelSumEl) {
+            const name = results.model_name || '—';
+            modelSumEl.textContent = `Analysis complete for ${name}. Unified bias index and category signals are summarized below.`;
+        }
+
+        const biasWrap = document.getElementById('resultBiasLevel');
+        if (biasWrap) {
+            biasWrap.textContent = results.bias_level || '—';
+            biasWrap.className =
+                'bias-level inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold mb-8';
+            const s = Number.isFinite(ubi) ? ubi : 0;
+            if (s >= 0.7) biasWrap.classList.add('high');
+            else if (s >= 0.4) biasWrap.classList.add('medium');
+            else if (s >= 0.2) biasWrap.classList.add('low');
+            else biasWrap.classList.add('minimal');
+        }
+
+        const setSatellite = (id, text) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const span = el.querySelector('span');
+            if (span) span.textContent = text;
         };
 
-        Plotly.newPlot('ubiGauge', gaugeData, gaugeLayout, { responsive: true });
+        const neutLabel = (catKey, shortLabel) => {
+            const bc = results.by_category && results.by_category[catKey];
+            if (!bc || bc.ubi_score == null || bc.bias_level === 'Insufficient Data') {
+                return `${shortLabel}: —`;
+            }
+            const u = Math.min(Number(bc.ubi_score), 1);
+            const pct = Math.round(Math.max(0, Math.min(100, (1 - u) * 100)));
+            return `${shortLabel}: ${pct}%`;
+        };
+
+        const comp = results.components || {};
+        const compNeut = (val, name) => {
+            if (val == null || !Number.isFinite(Number(val))) return `${name}: —`;
+            const c = Math.min(Math.max(Number(val), 0), 1);
+            const pct = Math.round((1 - c) * 100);
+            return `${name}: ${pct}%`;
+        };
+
+        const catLabels = {
+            gender: 'Gender Neutrality',
+            race: 'Racial Fairness',
+            profession: 'Professional Fairness',
+            religious_ideology: 'Ideological Balance',
+            political_ideology: 'Political Balance',
+        };
+
+        let top = neutLabel('gender', 'Gender Neutrality');
+        if (top.includes('—') && results.by_category) {
+            const keys = Object.keys(results.by_category).filter(
+                (k) => results.by_category[k] && results.by_category[k].ubi_score != null
+            );
+            if (keys.length) {
+                const k = keys[0];
+                top = neutLabel(k, catLabels[k] || k.replace(/_/g, ' '));
+            }
+        }
+        if (top.includes('—')) {
+            top = compNeut(comp.bias_magnitude, 'BM balance');
+        }
+
+        let br = neutLabel('race', 'Racial Fairness');
+        if (br.includes('—') && results.by_category) {
+            const keys = Object.keys(results.by_category).filter((k) => k !== 'gender');
+            const cand = keys.find((k) => results.by_category[k] && results.by_category[k].ubi_score != null);
+            if (cand) br = neutLabel(cand, catLabels[cand] || cand.replace(/_/g, ' '));
+        }
+        if (br.includes('—')) br = compNeut(comp.disparity, 'DP balance');
+
+        let bl = neutLabel('profession', 'Professional Fairness');
+        if (bl.includes('—') && results.by_category) {
+            const keys = Object.keys(results.by_category).filter((k) => !['gender', 'race'].includes(k));
+            const cand = keys.find((k) => results.by_category[k] && results.by_category[k].ubi_score != null);
+            if (cand) bl = neutLabel(cand, catLabels[cand] || cand.replace(/_/g, ' '));
+        }
+        if (bl.includes('—')) bl = compNeut(comp.distribution_shift, 'DS balance');
+
+        setSatellite('resultSatelliteTop', top);
+        setSatellite('resultSatelliteBR', br);
+        setSatellite('resultSatelliteBL', bl);
     }
 
     updateBiasLevel(biasLevel, ubiScore) {
@@ -176,39 +231,41 @@ class BiasDetectionApp {
     }
 
     updateComponentChart(components, weights) {
-        const categories = Object.keys(components);
-        const scores = Object.values(components);
-        const weightValues = categories.map(cat => weights[cat.toLowerCase()]);
+        // Plotly component scores (BM/DP/DS) only; keeps layout clean + palette consistent.
+        const categories = Object.keys(components || {});
+        const scores = Object.values(components || {});
 
-        const trace1 = {
+        const trace = {
             x: categories,
             y: scores,
             type: 'bar',
-            name: 'Scores',
-            marker: { color: ['#ff9999', '#66b3ff', '#99ff99'] }
+            marker: { color: ['#f87171', '#22d3ee', '#4ade80'] },
+            text: scores.map((v) => (v != null && Number.isFinite(Number(v)) ? Number(v).toFixed(3) : '—')),
+            textposition: 'outside',
+            cliponaxis: false,
         };
-
-        const trace2 = {
-            x: categories,
-            y: weightValues,
-            type: 'bar',
-            name: 'Weights',
-            marker: { color: ['#ff6666', '#3388ff', '#66ff66'] },
-            opacity: 0.6
-        };
-
-        const data = [trace1, trace2];
 
         const layout = {
-            barmode: 'group',
-            margin: { t: 30, l: 50, r: 30, b: 50 },
-            height: 200,
-            legend: { orientation: 'h', y: -0.2 },
-            xaxis: { title: 'Components' },
-            yaxis: { title: 'Value', range: [0, 1] }
+            margin: { t: 10, l: 50, r: 20, b: 50 },
+            autosize: true,
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: '#94a3b8' },
+            showlegend: false,
+            xaxis: {
+                title: { text: 'Components', font: { color: '#cbd' } },
+                tickfont: { color: '#94a3b8' },
+                gridcolor: 'rgba(255,255,255,0.06)',
+            },
+            yaxis: {
+                title: { text: 'Value', font: { color: '#cbd' } },
+                tickfont: { color: '#94a3b8' },
+                range: [0, 1],
+                gridcolor: 'rgba(255,255,255,0.06)',
+            },
         };
 
-        Plotly.newPlot('componentChart', data, layout, { responsive: true });
+        Plotly.newPlot('componentChart', [trace], layout, { responsive: true, displayModeBar: false });
     }
 
     updateDetailsTable(results) {
@@ -217,39 +274,43 @@ class BiasDetectionApp {
         const comp = results.components || {};
         
         let html = `
-            <table>
-                <tr>
-                    <th>Metric</th>
-                    <th>Value</th>
-                </tr>
-                <tr>
-                    <td>Model</td>
-                    <td>${results.model_name || '—'}</td>
-                </tr>
-                <tr>
-                    <td>Bias Magnitude (BM)</td>
-                    <td>${comp.bias_magnitude != null ? comp.bias_magnitude.toFixed(4) : '—'}</td>
-                </tr>
-                <tr>
-                    <td>Disparity (DP)</td>
-                    <td>${comp.disparity != null ? comp.disparity.toFixed(4) : '—'}</td>
-                </tr>
-                <tr>
-                    <td>Distribution Shift (DS)</td>
-                    <td>${comp.distribution_shift != null ? comp.distribution_shift.toFixed(4) : '—'}</td>
-                </tr>
-                <tr>
-                    <td>Total Prompts</td>
-                    <td>${meta.total_prompts ?? '—'}</td>
-                </tr>
-                <tr>
-                    <td>Processing Time</td>
-                    <td>${meta.processing_time != null ? Number(meta.processing_time).toFixed(2) + 's' : '—'}</td>
-                </tr>
-                <tr>
-                    <td>Analysis Time</td>
-                    <td>${meta.timestamp ? new Date(meta.timestamp).toLocaleString() : '—'}</td>
-                </tr>
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr>
+                        <th class="py-3 px-4 text-xs sm:text-sm font-semibold text-slate-200 border-b border-white/10">Metric</th>
+                        <th class="py-3 px-4 text-xs sm:text-sm font-semibold text-slate-200 border-b border-white/10">Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="py-3 px-4 text-sm text-slate-300 border-b border-white/5">Model</td>
+                        <td class="py-3 px-4 text-sm text-slate-100 border-b border-white/5">${results.model_name || '—'}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-4 text-sm text-slate-300 border-b border-white/5">Bias Magnitude (BM)</td>
+                        <td class="py-3 px-4 text-sm text-slate-100 border-b border-white/5">${comp.bias_magnitude != null ? comp.bias_magnitude.toFixed(4) : '—'}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-4 text-sm text-slate-300 border-b border-white/5">Disparity (DP)</td>
+                        <td class="py-3 px-4 text-sm text-slate-100 border-b border-white/5">${comp.disparity != null ? comp.disparity.toFixed(4) : '—'}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-4 text-sm text-slate-300 border-b border-white/5">Distribution Shift (DS)</td>
+                        <td class="py-3 px-4 text-sm text-slate-100 border-b border-white/5">${comp.distribution_shift != null ? comp.distribution_shift.toFixed(4) : '—'}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-4 text-sm text-slate-300 border-b border-white/5">Total Prompts</td>
+                        <td class="py-3 px-4 text-sm text-slate-100 border-b border-white/5">${meta.total_prompts ?? '—'}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-4 text-sm text-slate-300 border-b border-white/5">Processing Time</td>
+                        <td class="py-3 px-4 text-sm text-slate-100 border-b border-white/5">${meta.processing_time != null ? Number(meta.processing_time).toFixed(2) + 's' : '—'}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-3 px-4 text-sm text-slate-300">Analysis Time</td>
+                        <td class="py-3 px-4 text-sm text-slate-100">${meta.timestamp ? new Date(meta.timestamp).toLocaleString() : '—'}</td>
+                    </tr>
+                </tbody>
             </table>
         `;
         
