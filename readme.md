@@ -12,6 +12,7 @@ This project implements a complete bias detection pipeline that:
   - **Distribution Shift (DS)**: Measures how responses differ from baseline distributions
 - Provides both command-line and web interfaces for analysis
 - Generates comprehensive reports and visualizations
+- You'll get a cpmparitive analysis
 
 ## 📂 Project Structure
 
